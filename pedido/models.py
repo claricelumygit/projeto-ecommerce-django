@@ -7,7 +7,7 @@ class Pedido(models.Model):
     total = models.FloatField()
     qtd_total = models.PositiveIntegerField()
     status = models.CharField(
-        default="C",
+        default='C',
         max_length=1,
         choices=(
             ('A', 'Aprovado'),
