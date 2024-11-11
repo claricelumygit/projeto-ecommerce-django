@@ -46,7 +46,7 @@ class AdicionarAoCarrinho(View):
         produto_nome = produto.nome
         variacao_nome = variacao.nome or ''
         preco_unitario = variacao.preco
-        preco_unitario_promocional = variacao.preco_promocional
+        preco_unitario_promocional = variacao.preco_promocional        
         quantidade = 1
         slug = produto.slug
         imagem = produto.imagem
@@ -93,6 +93,8 @@ class AdicionarAoCarrinho(View):
                 'variacao_id': variacao_id,
                 'preco_unitario': preco_unitario,
                 'preco_unitario_promocional': preco_unitario_promocional,
+                'preco_quantitativo': preco_unitario,
+                'preco_quantitativo_promocional': preco_unitario_promocional,
                 'quantidade': 1,
                 'slug': slug,
                 'imagem': imagem,
@@ -111,12 +113,40 @@ class AdicionarAoCarrinho(View):
 
 class RemoverDoCarrinho(View):
     def get(self, *args, **kwargs):
-        return HttpResponse('Remover carrinho')
+        http_referer = self.request.META.get(
+            'HTTP_REFERER',
+            reverse('produto:lista')
+        )
+        variacao_id = self.request.GET.get('vid')
+
+        if not variacao_id:
+            return redirect(http_referer)
+
+        if not self.request.session.get('carrinho'):
+            return redirect(http_referer)
+
+        if variacao_id not in self.request.session['carrinho']:
+            return redirect(http_referer)
+
+        carrinho = self.request.session['carrinho'][variacao_id]
+
+        messages.success(
+            self.request,
+            f'Produto {carrinho["produto_nome"]} {carrinho["variacao_nome"]} '
+            f'removido do seu carrinho.'
+        )
+
+        del self.request.session['carrinho'][variacao_id]
+        self.request.session.save()
+        return redirect(http_referer)
 
 
 class Carrinho(View):
     def get(self, *args, **kwargs):
-        return render(self.request, 'produto/carrinho.html')
+        contexto = {
+            'carrinho': self.request.session.get('carrinho', {})
+        }
+        return render(self.request, 'produto/carrinho.html', contexto)
 
 
 class Finalizar(View):
