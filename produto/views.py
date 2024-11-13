@@ -5,7 +5,6 @@ from django.views import View
 from django.http import HttpResponse
 from django.contrib import messages
 from . import models
-from pprint import pprint
 
 
 class ListaProdutos(ListView):
@@ -47,7 +46,7 @@ class AdicionarAoCarrinho(View):
         variacao_nome = variacao.nome or ''
         preco_unitario = variacao.preco
         preco_unitario_promocional = variacao.preco_promocional        
-        quantidade = 1
+        quantidade_carrinho = 1
         slug = produto.slug
         imagem = produto.imagem
 
@@ -74,16 +73,16 @@ class AdicionarAoCarrinho(View):
                 messages.warning(
                     self.request,
                     f'Estoque insuficiente para {quantidade_carrinho}x no '
-                    f'produto "{produto_nome}". Adicionamos {variacao_estoque}x '
-                    f'no seu carrinho.'
+                    f'produto "{produto_nome}". '
+                    f'Adicionamos {variacao_estoque}x no seu carrinho.'
                 )
                 quantidade_carrinho = variacao_estoque
 
             carrinho[variacao_id]['quantidade'] = quantidade_carrinho
             carrinho[variacao_id]['preco_quantitativo'] = preco_unitario * \
                 quantidade_carrinho
-            carrinho[variacao_id]['preco_quantitativo_promocional'] = preco_unitario_promocional * \
-                quantidade_carrinho
+            carrinho[variacao_id]['preco_quantitativo_promocional'] = \
+                preco_unitario_promocional * quantidade_carrinho
 
         else:
             carrinho[variacao_id] = {
@@ -151,4 +150,12 @@ class Carrinho(View):
 
 class ResumoDaCompra(View):
     def get(self, *args, **kwargs):
-        return HttpResponse('ResumoDaCompra')
+        if not self.request.user.is_authenticated:
+            return redirect('perfil:criar')
+
+        contexto = {
+            'usuario': self.request.user,
+            'carrinho': self.request.session['carrinho'],
+        }
+
+        return render(self.request, 'produto/resumodacompra.html', contexto)
